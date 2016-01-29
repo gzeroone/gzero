@@ -17,7 +17,8 @@ object Boot extends App {
 
   // create and start our actors
   val service = system.actorOf(Props[GZeroServiceActor], "gzero-api")
-  val publisher = system.actorOf(Props[GraphPublisher], "gzero-graphpublisher")
+  //val publisher = system.actorOf(Props[GraphPublisher], "gzero-graphpublisher")
+
 
   implicit val timeout = Timeout(5.seconds)
   // start a new HTTP server on port 8080 with our service actor as the handler
