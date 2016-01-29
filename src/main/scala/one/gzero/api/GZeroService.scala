@@ -3,12 +3,12 @@ package one.gzero.api
 import java.sql.Timestamp
 
 import akka.actor.Actor
+import one.gzero.db.VertexCache
 import spray.routing._
 import spray.json.DefaultJsonProtocol
 import spray.httpx.SprayJsonSupport.sprayJsonUnmarshaller
 import com.thinkaurelius.titan.core.TitanGraph
 import one.gzero.api.{Edge => GEdge, Vertex => GVertex}
-import gremlin.scala
 import gremlin.scala._
 
 trait LocalCassandraConnect {
@@ -41,6 +41,7 @@ class GZeroServiceActor extends Actor with GZeroService {
 /*  val graphPublisher = context.actorOf(Props[GraphPublisher])
 */
   graphJava = getTitanConnection
+  val graph = graphJava
   def actorRefFactory = context
   // TODO - consider creating stream processing route handling.
   def receive = runRoute(routes)
@@ -48,51 +49,9 @@ class GZeroServiceActor extends Actor with GZeroService {
 
 
 
-trait GZeroService extends HttpService with Protocols with LocalCassandraConnect {
+trait GZeroService extends HttpService with Protocols with LocalCassandraConnect with VertexCache {
   var graphJava: TitanGraph = null
-  lazy val graph = graphJava.asScala
-  lazy val vertexIdCache = collection.mutable.Map[(String, String), Long]()
-
-  val TimestampKey = Key[Timestamp]("timestamp")
-  val EventSourceKey = Key[String]("event_source")
-  /* the api allows for id, but we represent this as name inside of graph db, because the graph db has it's own id */
-  val NameKey = Key[String]("name")
-  val PrettyNameKey = Key[String]("prettyName")
-  val RatingKey = Key[Double]("rating")
-
-
-  def getOrCreateVertex(vertex : GVertex): scala.Vertex = {
-    val label = vertex.label
-    val name = vertex.id
-    val check = vertexIdCache.get(label, name)
-    if (check.isDefined) {
-      try {
-        return graph.V(check.get).head()
-      } catch {
-        case e : Exception => {
-          //log something
-          vertexIdCache.remove(label,name)
-        }
-      }
-    }
-
-    /* go ask the graph for the vertex */
-    val answer = {
-      val matches = graph.V.has(label, NameKey, name).toList()
-      if (matches.length > 0) {
-        println("matches:")
-        println(matches)
-        matches.head
-      }
-      else {
-        /* create the vertex */
-        graph +(label, NameKey -> name)
-      }
-    }
-    val vId = answer.id().asInstanceOf[Long]
-    vertexIdCache += ((label, name) -> vId)
-    return answer
-  }
+  lazy val g = graphJava.asScala
 
   def getTitanConnection = {
     if (graphJava == null || !graphJava.isOpen()) {
@@ -123,7 +82,7 @@ trait GZeroService extends HttpService with Protocols with LocalCassandraConnect
                 if (edge.properties.isDefined) {
                   //TODO - update the properties of the edge
                 }
-                graph.tx().commit()
+                g.tx().commit()
 
                 s"""{"edge_ack": $edge}"""
               }
@@ -134,17 +93,6 @@ trait GZeroService extends HttpService with Protocols with LocalCassandraConnect
             vertex =>
               complete {
                 val v = getOrCreateVertex(vertex)
-
-                if (vertex.timestamp.isDefined)
-                {
-                  val timestamp = Timestamp.valueOf(vertex.timestamp.get)
-                  v.setProperty(TimestampKey,timestamp)
-                }
-
-                if (vertex.properties.isDefined) {
-                  //TODO - update the properties of the vertex
-                }
-                graph.tx().commit()
                 s"""{"vertex_ack": $vertex}"""
               }
           }
