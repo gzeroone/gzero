@@ -8,11 +8,11 @@ Clone [titan](https://github.com/thinkaurelius/titan/tree/titan11) branch `titan
 ```mvn clean install -DskipTests=true -Paurelius-release -Dgpg.skip=true```
 
 #### Cassandra & Elastic Search
-Titan 1.1 comes with cassandra and elastic search, enable thrift on cassandra and start both:
+Titan 1.1 comes with cassandra and elastic search. Start cassandra and enable thrift then start elastic search:
 
 ```Shell
-titan/bin/nodetool enablethrift  
 titan/bin/cassandra -f  
+titan/bin/nodetool enablethrift  
 titan/bin/elasticsearch
 ```
 
