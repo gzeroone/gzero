@@ -35,7 +35,7 @@ Request:
 curl \
 	-H 'Content-Type: application/json' \
 	-X POST localhost:8080/edge \
-	-d '{"label":"vehicle_type", "head":{"label":"person","name":"Joy Ryder"},"tail":{"label":"vehicle","name":"Rental"}}'
+	-d '{"label":"drove", "head":{"label":"person","name":"Bonnie"},"tail":{"label":"vehicle","name":"1932 Ford V-8 B-400 convertible sedan"}}'
 ```
 
 ### POST `/vertex`
@@ -46,7 +46,7 @@ Request:
 curl \
 	-H 'Content-Type: application/json' \
 	-X POST localhost:8080/vertex \
-	-d '{"label":"person","name":"Guy Manley"}'
+	-d '{"label":"person","name":"Clyde"}'
 ```
 
 
@@ -58,5 +58,5 @@ Request:
 curl \
 	-H 'Content-Type: application/json' \
 	-X GET localhost:8080/query \
-	-d '{"gremlin":"g.V().has(\"name\", \"Joy Ryder\")"}'
+	-d '{"gremlin":"g.V().has(\"name\", \"Bonnie\")"}'
 ```
