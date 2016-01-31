@@ -23,7 +23,11 @@ Ensure config in `titan/conf/gremlin-server.yaml` is using the `HttpChannelizer`
 Now, start the server: `bin/gremlin-server.sh`
 
 #### Running GZero API
-Run [Boot.scala](src/main/scala/one/gzero/Boot.scala) to start the API on port 8080.
+Execute
+```Shell
+sbt run
+```
+to start the API on port 8080.
 
 ## API
 
