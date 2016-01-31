@@ -1,2 +1,62 @@
 # gzero
 GZero simplifies large scale graph-based computing, storage, and machine learning model predictions.
+
+## Getting Started
+
+#### Titan 1.1
+Clone [titan](https://github.com/thinkaurelius/titan/tree/titan11) branch `titan11` and run:  
+```mvn clean install -DskipTests=true -Paurelius-release -Dgpg.skip=true```
+
+#### Cassandra & Elastic Search
+Titan 1.1 comes with cassandra and elastic search, enable thrift on cassandra and start both:
+
+```Shell
+titan/bin/nodetool enablethrift  
+titan/bin/cassandra -f  
+titan/bin/elasticsearch
+```
+
+#### Gremlin Server
+
+Ensure config in `titan/conf/gremlin-server.yaml` is using the `HttpChannelizer` to enable the REST API. You'll also want to make sure the graph properties include cassandra and elastic search. You can find an example in [conf/gremlin-server.yaml](conf/gremlin-server.yaml)
+
+Now, start the server: `bin/gremlin-server.sh`
+
+#### Running GZero API
+Run [Boot.scala](src/main/scala/one/gzero/Boot.scala) to start the API on port 8080.
+
+## API
+
+### POST `/edge`
+Create an edge. Will create verticies if they do not exist.
+
+Request:
+```Shell
+curl \
+	-H 'Content-Type: application/json' \
+	-X POST localhost:8080/edge \
+	-d '{"label":"vehicle_type", "head":{"label":"person","name":"Joy Ryder"},"tail":{"label":"vehicle","name":"Rental"}}'
+```
+
+### POST `/vertex`
+Create a vertex.
+
+Request:
+```Shell
+curl \
+	-H 'Content-Type: application/json' \
+	-X POST localhost:8080/vertex \
+	-d '{"label":"person","name":"Guy Manley"}'
+```
+
+
+### GET `/query`
+Run a gremlin query against the graph.
+
+Request:
+```Shell
+curl \
+	-H 'Content-Type: application/json' \
+	-X GET localhost:8080/query \
+	-d '{"gremlin":"g.V().has(\"name\", \"Joy Ryder\")"}'
+```
