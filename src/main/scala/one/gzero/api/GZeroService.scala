@@ -3,32 +3,14 @@ package one.gzero.api
 import java.sql.Timestamp
 
 import akka.actor.Actor
-import one.gzero.db.VertexCache
+import one.gzero.db.{LocalGremlinQuery, LocalCassandraConnect, VertexCache}
+import org.apache.tinkerpop.gremlin.driver.{Client, Cluster}
 import spray.routing._
-import spray.json.DefaultJsonProtocol
+import spray.json.{JsObject, DefaultJsonProtocol}
 import spray.httpx.SprayJsonSupport.sprayJsonUnmarshaller
 import com.thinkaurelius.titan.core.TitanGraph
 import one.gzero.api.{Edge => GEdge, Vertex => GVertex}
 import gremlin.scala._
-
-trait LocalCassandraConnect {
-  def connect(): TitanGraph = {
-    import org.apache.commons.configuration.BaseConfiguration
-    val conf = new BaseConfiguration()
-    /* graph storage */
-    conf.setProperty("storage.backend", "cassandra")
-    conf.setProperty("storage.hostname", "127.0.0.1")
-    /* indexing */
-    /*
-    conf.setProperty("index.search.backend", "elasticsearch")
-    conf.setProperty("index.search.hostname" , "127.0.0.1")
-    conf.setProperty("index.search.elasticsearch.client-only" ,  "true")
-    */
-/*    conf.setProperty("index.search.elasticsearch.interface", "NODE") */
-    import com.thinkaurelius.titan.core.TitanFactory
-    TitanFactory.open(conf)
-  }
-}
 
 /* TODO - consider dropping Protocols and put implicit JSON conversion directly in the Vertex,Edge, Query classes */
 trait Protocols extends DefaultJsonProtocol {
@@ -38,8 +20,6 @@ trait Protocols extends DefaultJsonProtocol {
 }
 
 class GZeroServiceActor extends Actor with GZeroService {
-/*  val graphPublisher = context.actorOf(Props[GraphPublisher])
-*/
   graphJava = getTitanConnection
   val graph = graphJava
   def actorRefFactory = context
@@ -47,9 +27,7 @@ class GZeroServiceActor extends Actor with GZeroService {
   def receive = runRoute(routes)
 }
 
-
-
-trait GZeroService extends HttpService with Protocols with LocalCassandraConnect with VertexCache {
+trait GZeroService extends HttpService with Protocols with LocalCassandraConnect with VertexCache with LocalGremlinQuery {
   var graphJava: TitanGraph = null
   lazy val g = graphJava.asScala
 
@@ -101,8 +79,7 @@ trait GZeroService extends HttpService with Protocols with LocalCassandraConnect
           (get & entity(as[Query])) {
             queryRequest => {
               complete {
-                /* TODO  - connect to gremlin server or figure out passing gremlin string into graph */
-                s"""requested query $queryRequest"""
+                query(queryRequest.gremlin)
               }
             }
           }
