@@ -32,31 +32,61 @@ trait GZeroService extends HttpService with GzeroProtocols with LocalCassandraCo
     graphJava
   }
 
+  def handleEdge(edge:GEdge): String = {
+    val head = getOrCreateVertex(edge.head)
+    val tail = getOrCreateVertex(edge.tail)
+
+    val e = head.addEdge(edge.label, tail)
+
+    if (edge.timestamp.isDefined)
+    {
+      val timestamp = Timestamp.valueOf(edge.timestamp.get)
+      e.setProperty(TimestampKey,timestamp)
+    }
+    if ( edge.event_source.isDefined ) {
+      e.setProperty(EventSourceKey, edge.event_source.get)
+    }
+
+    if (edge.properties.isDefined) {
+      //TODO - update the properties of the edge
+    }
+    g.tx().commit()
+
+    s"""{"edge_ack": $edge}"""
+  }
+
+  def handleVertex(vertex:GVertex): String = {
+    val v = getOrCreateVertex(vertex)
+    s"""{"vertex_ack": $vertex}"""
+  }
+
+  def handleRegisterFeature(req:Query): String = {
+    val BindingsKey = Key[JsObject]("bindings")
+    val TagsKey = Key[JsArray]("tags")
+
+    val (g,b,t) = (req.gremlin, req.bindings, req.tags)
+
+    val gv = new GVertex("feature", Some(JsObject("name" -> JsString(g))))
+    val v = getOrCreateVertex(gv)
+
+    // The general technique will be to define the query logic with all optional parameters as
+    // bindings. When "executing the feature" you can pass the bindings without the gremlin query
+    // and the stored query will be executed with the bindings updated.
+    if ( b.isDefined ) {
+      v.setProperty(BindingsKey, b.get)
+    }
+    if ( t.isDefined ) {
+      v.setProperty(TagsKey, t.get)
+    }
+    s"""{"register_ack" : $v}"""
+  }
+
   val routes = {
       path("edge") {
           (post & entity(as[GEdge])) {
             edge =>
               complete {
-                val head = getOrCreateVertex(edge.head)
-                val tail = getOrCreateVertex(edge.tail)
-
-                val e = head.addEdge(edge.label, tail)
-
-                if (edge.timestamp.isDefined)
-                {
-                  val timestamp = Timestamp.valueOf(edge.timestamp.get)
-                  e.setProperty(TimestampKey,timestamp)
-                }
-                if ( edge.event_source.isDefined ) {
-                  e.setProperty(EventSourceKey, edge.event_source.get)
-                }
-
-                if (edge.properties.isDefined) {
-                  //TODO - update the properties of the edge
-                }
-                g.tx().commit()
-
-                s"""{"edge_ack": $edge}"""
+                handleEdge(edge)
               }
           }
       } ~
@@ -64,8 +94,7 @@ trait GZeroService extends HttpService with GzeroProtocols with LocalCassandraCo
           (post & entity(as[GVertex])) {
             vertex =>
               complete {
-                val v = getOrCreateVertex(vertex)
-                s"""{"vertex_ack": $vertex}"""
+                handleVertex(vertex)
               }
           }
       } ~
@@ -82,29 +111,7 @@ trait GZeroService extends HttpService with GzeroProtocols with LocalCassandraCo
           (post & entity(as[Query])) {
             req => {
               complete {
-                val BindingsKey = Key[JsObject]("bindings")
-                val TagsKey = Key[JsArray]("tags")
-
-                val g = req.gremlin
-                val b = req.bindings
-                val t = req.tags
-
-                val gv = new GVertex("feature", Some(JsObject("name" -> JsString(g))))
-                val v = getOrCreateVertex(gv)
-
-                // The general technique will be to define the query logic with all optional parameters as
-                // bindings. When "executing the feature" you can pass the bindings without the gremlin query
-                // and the stored query will be executed with the bindings updated.
-                if ( b.isDefined ) {
-                  v.setProperty(BindingsKey, b.get)
-                }
-                if ( t.isDefined ) {
-                  v.setProperty(TagsKey, t.get)
-                }
-
-                s"""{"register_ack" : $v}"""
-
-                //query(queryRequest.gremlin)
+                handleRegisterFeature(req)
               }
             }
         }
