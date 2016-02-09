@@ -6,18 +6,12 @@ import akka.actor.Actor
 import one.gzero.db.{LocalGremlinQuery, LocalCassandraConnect, VertexCache}
 import org.apache.tinkerpop.gremlin.driver.{Client, Cluster}
 import spray.routing._
-import spray.json.{JsObject, DefaultJsonProtocol}
+import spray.json.{JsString, JsObject, DefaultJsonProtocol}
 import spray.httpx.SprayJsonSupport.sprayJsonUnmarshaller
 import com.thinkaurelius.titan.core.TitanGraph
 import one.gzero.api.{Edge => GEdge, Vertex => GVertex}
 import gremlin.scala._
 
-/* TODO - consider dropping Protocols and put implicit JSON conversion directly in the Vertex,Edge, Query classes */
-trait Protocols extends DefaultJsonProtocol {
-  implicit val impVertex = jsonFormat5(Vertex.apply)
-  implicit val impEdge = jsonFormat7(Edge.apply)
-  implicit val impQuery = jsonFormat1(Query.apply)
-}
 
 class GZeroServiceActor extends Actor with GZeroService {
   graphJava = getTitanConnection
@@ -27,7 +21,7 @@ class GZeroServiceActor extends Actor with GZeroService {
   def receive = runRoute(routes)
 }
 
-trait GZeroService extends HttpService with Protocols with LocalCassandraConnect with VertexCache with LocalGremlinQuery {
+trait GZeroService extends HttpService with GzeroProtocols with LocalCassandraConnect with VertexCache with LocalGremlinQuery {
   var graphJava: TitanGraph = null
   lazy val g = graphJava.asScala
 
@@ -74,7 +68,7 @@ trait GZeroService extends HttpService with Protocols with LocalCassandraConnect
                 s"""{"vertex_ack": $vertex}"""
               }
           }
-        } ~
+      } ~
         path("query") {
           (get & entity(as[Query])) {
             queryRequest => {
@@ -83,6 +77,36 @@ trait GZeroService extends HttpService with Protocols with LocalCassandraConnect
               }
             }
           }
+      } ~
+        path("register_feature") {
+          (post & entity(as[Query])) {
+            req => {
+              complete {
+                val g = req.gremlin
+                val b = req.bindings
+                val t = req.tags
+
+                val gv = new GVertex("feature", Some(JsObject("name" -> JsString(g))))
+                val v = getOrCreateVertex(gv)
+
+                // The general technique will be to define the query logic with all optional parameters as
+                // bindings. When "executing the feature" you can pass the bindings without the gremlin query
+                // and the stored query will be executed with the bindings updated.
+                if ( b.isDefined ) {
+                  val BindingsKey = Key[String]("bindings")
+                  v.setProperty(BindingsKey, b)
+                }
+                if ( t.isDefined ) {
+                  val TagsKey = Key[String]("tags")
+                  v.setProperty(TagsKey, b)
+                }
+
+                s"""{"register_ack" : $v}"""
+
+                //query(queryRequest.gremlin)
+              }
+            }
         }
+      }
   }
 }

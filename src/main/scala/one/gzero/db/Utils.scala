@@ -16,6 +16,7 @@ import DefaultJsonProtocol._
 import spray.httpx.SprayJsonSupport
 import spray.client.pipelining._
 import SprayJsonSupport._
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONReader
 
 /* Inhererting this trait allows an app to simply create a titan graph object as graph = connect() */
 trait LocalCassandraConnect {
@@ -50,7 +51,7 @@ trait VertexCache {
 
     def getOrCreateVertex(vertex: GVertex): Vertex = {
         val label = vertex.label
-        val name = vertex.name
+        val name = vertex.getProperty("name")
         val check = vertexIdCache.get(label, name)
         if (check.isDefined) {
           try {
@@ -67,8 +68,6 @@ trait VertexCache {
         val answer = {
           val matches = graph.V.has(label, NameKey, name).toList()
           if (matches.length > 0) {
-            println("matches:")
-            println(matches)
             matches.head
           }
           else {
@@ -85,8 +84,20 @@ trait VertexCache {
 
 case class GremlinResult(requestId: String, result: JsObject, status: JsObject)
 
+//GraphSON is used for returning objects. The format is very similar to the syntax for adding edges/vertices.
+//GZero API provides a simpler method for indicating "head" and "tail" vertices on edges. It is still possible to add
+//vertices and edges using the standard gremlin api. g.addVertex...
+//the difference is that in GraphSON the edges indicate their head and tail through the
+//outV and inV vertices with internal graph ids.
+//{"inVLabel":"vehicle","outV":8256,"label":"drove","outVLabel":"person","id":"2rs-6dc-4r9-6hs","type":"edge","inV":8416}
+case class GraphSONEdge(outV:Int, inV:Int, label:String, properties: Option[JsObject] )
+case class GraphSONVertex(label:String, id:Option[Int], properties: Option[JsObject])
+case class NameProperty (name:String)
+
 object GremlinResultJsonProtocol extends DefaultJsonProtocol {
-  implicit val blah = jsonFormat3(GremlinResult)
+  implicit val gresult = jsonFormat3(GremlinResult)
+  implicit val gedge = jsonFormat4(GraphSONEdge)
+  implicit val gvertex = jsonFormat3(GraphSONVertex)
 }
 
 trait LocalGremlinQuery {
@@ -106,7 +117,8 @@ trait LocalGremlinQuery {
       }
 
       Await.result(responseFuture, 24 hours)
-      responseFuture.value.get.get.result.fields("data").toString
+      val graphSon =responseFuture.value.get.get.result.fields("data")
+      graphSon.toString
     }
     catch {
       case ca: ConnectionAttemptFailedException => {
