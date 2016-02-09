@@ -1,6 +1,8 @@
 package one.gzero.api
 
 import spray.json._
+import DefaultJsonProtocol._
+
 
 /*case classes used by spray for marshalling and unmarshalling of JSON*/
 //case class VertexProperties(name:String, event_source: Option[String], timestamp: Option[String])
@@ -8,12 +10,16 @@ case class Vertex(label:String, properties : Option[JsObject]) {
   def getProperty(key : String) : String = {
     properties.get.fields.get(key).get.convertTo[String]
   }
+  def name : String = getProperty("name")
 }
 case class Edge(label: String, name:Option[String], event_source: Option[String], timestamp: Option[String], properties: Option[JsObject],
-                head: Vertex, tail: Vertex)
+                head: Vertex, tail: Vertex) {
+  def getProperty(key : String) : String = {
+    properties.get.fields.get(key).get.convertTo[String]
+  }
+}
 /*used for querying the graph*/
 case class Query(gremlin: String, bindings:Option[JsObject], tags:Option[JsArray])
-case class BindingsPropert(bindings:String)
 
 case class GraphSONEdge(outV:Int, inV:Int, label:String, properties: Option[JsObject])
 case class GraphSONVertex(label:String, id:Option[Int], properties: Option[JsObject])

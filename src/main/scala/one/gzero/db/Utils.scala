@@ -16,7 +16,6 @@ import DefaultJsonProtocol._
 import spray.httpx.SprayJsonSupport
 import spray.client.pipelining._
 import SprayJsonSupport._
-import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONReader
 
 /* Inhererting this trait allows an app to simply create a titan graph object as graph = connect() */
 trait LocalCassandraConnect {

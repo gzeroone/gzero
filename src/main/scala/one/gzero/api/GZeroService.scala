@@ -6,7 +6,7 @@ import akka.actor.Actor
 import one.gzero.db.{LocalGremlinQuery, LocalCassandraConnect, VertexCache}
 import org.apache.tinkerpop.gremlin.driver.{Client, Cluster}
 import spray.routing._
-import spray.json.{JsString, JsObject, DefaultJsonProtocol}
+import spray.json.{JsArray, JsString, JsObject, DefaultJsonProtocol}
 import spray.httpx.SprayJsonSupport.sprayJsonUnmarshaller
 import com.thinkaurelius.titan.core.TitanGraph
 import one.gzero.api.{Edge => GEdge, Vertex => GVertex}
@@ -82,6 +82,9 @@ trait GZeroService extends HttpService with GzeroProtocols with LocalCassandraCo
           (post & entity(as[Query])) {
             req => {
               complete {
+                val BindingsKey = Key[JsObject]("bindings")
+                val TagsKey = Key[JsArray]("tags")
+
                 val g = req.gremlin
                 val b = req.bindings
                 val t = req.tags
@@ -93,12 +96,10 @@ trait GZeroService extends HttpService with GzeroProtocols with LocalCassandraCo
                 // bindings. When "executing the feature" you can pass the bindings without the gremlin query
                 // and the stored query will be executed with the bindings updated.
                 if ( b.isDefined ) {
-                  val BindingsKey = Key[String]("bindings")
-                  v.setProperty(BindingsKey, b)
+                  v.setProperty(BindingsKey, b.get)
                 }
                 if ( t.isDefined ) {
-                  val TagsKey = Key[String]("tags")
-                  v.setProperty(TagsKey, b)
+                  v.setProperty(TagsKey, t.get)
                 }
 
                 s"""{"register_ack" : $v}"""
