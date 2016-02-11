@@ -1,5 +1,5 @@
 # gzero
-GZero simplifies large scale graph-based computing, storage, and machine learning model predictions.
+GZero simplifies large scale graph-based computing, storage, and machine learning model predictions. All features and labels will be expressed as graph traversals. A user may specify the features necessary to construct a feature vector with the appropriate labels and the framework will provide an easy API for training, evaluating, and performing predictions with stored models.
 
 ## Getting Started
 
