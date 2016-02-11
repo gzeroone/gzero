@@ -64,3 +64,7 @@ curl \
 	-X GET localhost:8080/query \
 	-d '{"gremlin":"g.V().has(\"name\", \"Bonnie\")"}'
 ```
+
+## Code
+If you are interested in contributing and jumping into the code, start with [GZeroService.scala](https://github.com/jamesjgardner/gzero/blob/master/src/main/scala/one/gzero/api/GZeroService.scala)
+
