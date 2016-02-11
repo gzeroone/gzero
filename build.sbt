@@ -33,9 +33,12 @@ libraryDependencies ++= Seq(
   //    "com.thinkaurelius.titan" % "titan-hbase" % titanV,
   //    "com.thinkaurelius.titan" % "titan-solr" % titanV,
   "org.apache.tinkerpop" % "tinkergraph-gremlin" % gremlinV,
-  "org.apache.tinkerpop" % "gremlin-driver" % gremlinV,
-  "org.specs2" %% "specs2-core" % "2.3.11" % "test"
+  "org.apache.tinkerpop" % "gremlin-driver" % gremlinV
+  //"org.specs2" %% "specs2-core" % "2.3.11" % "test"
 )
+
+libraryDependencies += "org.scalactic" %% "scalactic" % "2.2.6"
+libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.6" % "test"
 
 resolvers += "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository"
 

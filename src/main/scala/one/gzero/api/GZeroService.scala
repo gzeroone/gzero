@@ -61,8 +61,8 @@ trait GZeroService extends HttpService with GzeroProtocols with LocalCassandraCo
   }
 
   def handleRegisterFeature(req:Query): String = {
-    val BindingsKey = Key[JsObject]("bindings")
-    val TagsKey = Key[JsArray]("tags")
+    val BindingsKey = Key[String]("bindings")
+    val TagsKey = Key[String]("tags")
 
     val (g,b,t) = (req.gremlin, req.bindings, req.tags)
 
@@ -73,11 +73,12 @@ trait GZeroService extends HttpService with GzeroProtocols with LocalCassandraCo
     // bindings. When "executing the feature" you can pass the bindings without the gremlin query
     // and the stored query will be executed with the bindings updated.
     if ( b.isDefined ) {
-      v.setProperty(BindingsKey, b.get)
+      v.setProperty(BindingsKey, b.get.toString)
     }
     if ( t.isDefined ) {
-      v.setProperty(TagsKey, t.get)
+      v.setProperty(TagsKey, t.get.toString)
     }
+    v.graph().tx().commit()
     s"""{"register_ack" : $v}"""
   }
 
