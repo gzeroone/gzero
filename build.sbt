@@ -1,10 +1,14 @@
 organization := "one.gzero"
 
+name := "gzero"
+
 version := "0.0.1-SNAPSHOT"
 
 scalaVersion := "2.11.7"
 
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
+
+publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
 
 val akkaV = "2.3.9"
 val sprayV = "1.3.3"
@@ -38,9 +42,9 @@ libraryDependencies ++= Seq(
 )
 
 libraryDependencies += "org.scalactic" %% "scalactic" % "2.2.6"
+
 libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.6" % "test"
 
 resolvers += "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository"
-
 
 Revolver.settings

@@ -19,7 +19,7 @@ class GremlinTests extends FlatSpec with Matchers {
     edge.label should be ("drove")
   }
 
-  it should "be convertible to a GraphSONVertex with corret name property " in {
+  it should "be convertible to a GraphSONVertex with correct name property " in {
     implicit val gresult = jsonFormat1(NameProperty)
     val vJ = JsObject("label"->JsString("vehicle"),"id"->JsNumber(2),"type"->JsString("vertex"), "properties" -> JsObject("name"->JsString("1932 Ford V-8 B-400 convertible sedan")))
     val v = vJ.convertTo[GraphSONVertex]

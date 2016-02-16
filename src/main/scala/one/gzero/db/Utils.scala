@@ -4,7 +4,7 @@ import java.net.URLEncoder
 
 import com.thinkaurelius.titan.core.TitanGraph
 import java.sql.Timestamp
-import one.gzero.api.{Edge => GEdge, Vertex => GVertex}
+import one.gzero.api.{Edge => GEdge, Vertex => GVertex, GzeroProtocols, Query}
 import gremlin.scala._
 import spray.can.Http.ConnectionAttemptFailedException
 import spray.json.{JsObject}
@@ -50,7 +50,7 @@ trait VertexCache {
 
     def getOrCreateVertex(vertex: GVertex): Vertex = {
         val label = vertex.label
-        val name = vertex.getProperty("name")
+        val name : String = vertex.getProperty("name")
         val check = vertexIdCache.get(label, name)
         if (check.isDefined) {
           try {
@@ -93,26 +93,31 @@ case class GraphSONEdge(outV:Int, inV:Int, label:String, properties: Option[JsOb
 case class GraphSONVertex(label:String, id:Option[Int], properties: Option[JsObject])
 case class NameProperty (name:String)
 
-object GremlinResultJsonProtocol extends DefaultJsonProtocol {
+object GremlinResultJsonProtocol extends DefaultJsonProtocol with GzeroProtocols {
   implicit val gresult = jsonFormat3(GremlinResult)
   implicit val gedge = jsonFormat4(GraphSONEdge)
   implicit val gvertex = jsonFormat3(GraphSONVertex)
 }
 
 trait LocalGremlinQuery {
-  def query(query : String): String = {
+  def query(query : Query): String = {
+    import GremlinResultJsonProtocol._
+    val (gremlin, bindings) = (query.gremlin, query.bindings)
     val jsonQuery = query.toJson
-
     implicit val system = ActorSystem("gzero-api")
     import system.dispatcher
 
-    import GremlinResultJsonProtocol._
 
     val pipeline = sendReceive ~> unmarshal[GremlinResult]
 
+    //curl -X POST -d "{\"gremlin\":\"100-x\", \"bindings\":{\"x\":1}}" "http://localhost:8182"
     try {
       val responseFuture = pipeline {
-        Get("http://localhost:8182?gremlin=" + URLEncoder.encode(query, "UTF-8"))
+        if (bindings.isDefined) {
+          Post("http://localhost:8182", JsObject("gremlin" -> JsString(gremlin), "bindings" -> bindings.get))
+        } else {
+          Post("http://localhost:8182", JsObject("gremlin" -> JsString(gremlin)))
+        }
       }
 
       Await.result(responseFuture, 24 hours)

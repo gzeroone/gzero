@@ -103,7 +103,7 @@ trait GZeroService extends HttpService with GzeroProtocols with LocalCassandraCo
           (get & entity(as[Query])) {
             queryRequest => {
               complete {
-                query(queryRequest.gremlin)
+                query(queryRequest)
               }
             }
           }
@@ -116,6 +116,15 @@ trait GZeroService extends HttpService with GzeroProtocols with LocalCassandraCo
               }
             }
         }
-      }
+      } ~
+        path("feature") {
+          (post & entity(as[Query])) {
+            req => {
+              complete {
+                handleRegisterFeature(req)
+              }
+            }
+          }
+        }
   }
 }

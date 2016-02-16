@@ -3,21 +3,24 @@ package one.gzero.api
 import spray.json._
 import DefaultJsonProtocol._
 
+abstract class PropertyHolder {
+  val properties : Option[JsObject]
+  def getProperty(key : String) : String = {
+    properties.get.fields.get(key).get.convertTo[String]
+  }
+  def getDoubleProperty(key : String) : Double = {
+    properties.get.fields.get(key).get.convertTo[Double]
+  }
+}
+
 
 /*case classes used by spray for marshalling and unmarshalling of JSON*/
 //case class VertexProperties(name:String, event_source: Option[String], timestamp: Option[String])
-case class Vertex(label:String, properties : Option[JsObject]) {
-  def getProperty(key : String) : String = {
-    properties.get.fields.get(key).get.convertTo[String]
-  }
+case class Vertex(label:String, properties : Option[JsObject]) extends PropertyHolder {
   def name : String = getProperty("name")
 }
 case class Edge(label: String, name:Option[String], event_source: Option[String], timestamp: Option[String], properties: Option[JsObject],
-                head: Vertex, tail: Vertex) {
-  def getProperty(key : String) : String = {
-    properties.get.fields.get(key).get.convertTo[String]
-  }
-}
+                head: Vertex, tail: Vertex) extends PropertyHolder
 /*used for querying the graph*/
 case class Query(gremlin: String, bindings:Option[JsObject], tags:Option[JsArray])
 
