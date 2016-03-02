@@ -8,8 +8,14 @@ abstract class PropertyHolder {
   def getProperty(key : String) : String = {
     properties.get.fields.get(key).get.convertTo[String]
   }
+  def getListProperty(key : String) : List[String] = {
+    properties.get.fields.get(key).get.convertTo[List[String]]
+  }
   def getDoubleProperty(key : String) : Double = {
     properties.get.fields.get(key).get.convertTo[Double]
+  }
+  def getIntProperty(key : String) : Int = {
+    properties.get.fields.get(key).get.convertTo[Int]
   }
 }
 
