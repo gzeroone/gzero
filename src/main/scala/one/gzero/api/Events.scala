@@ -1,9 +1,9 @@
 package one.gzero.api
 
 import spray.json._
-import DefaultJsonProtocol._
 
 abstract class PropertyHolder {
+  import DefaultJsonProtocol._
   val properties : Option[JsObject]
   def getProperty(key : String) : String = {
     properties.get.fields.get(key).get.convertTo[String]

@@ -12,10 +12,10 @@ import scala.concurrent.{TimeoutException, Await}
 import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import spray.json._
-import DefaultJsonProtocol._
 import spray.httpx.SprayJsonSupport
 import spray.client.pipelining._
 import SprayJsonSupport._
+import DefaultJsonProtocol._
 
 /* Inhererting this trait allows an app to simply create a titan graph object as graph = connect() */
 trait LocalCassandraConnect {
