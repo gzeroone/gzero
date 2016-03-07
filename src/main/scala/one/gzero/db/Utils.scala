@@ -95,7 +95,7 @@ object GremlinResultJsonProtocol extends DefaultJsonProtocol with GzeroProtocols
   implicit val gvertex = jsonFormat3(GraphSONVertex)
 }
 
-trait LocalGremlinQuery {
+trait GremlinServerConnect extends Config {
   def query(query : Query): String = {
     import GremlinResultJsonProtocol._
     val (gremlin, bindings) = (query.gremlin, query.bindings)
@@ -110,9 +110,9 @@ trait LocalGremlinQuery {
     try {
       val responseFuture = pipeline {
         if (bindings.isDefined) {
-          Post("http://localhost:8182", JsObject("gremlin" -> JsString(gremlin), "bindings" -> bindings.get))
+          Post(gremlinServerAddress, JsObject("gremlin" -> JsString(gremlin), "bindings" -> bindings.get))
         } else {
-          Post("http://localhost:8182", JsObject("gremlin" -> JsString(gremlin)))
+          Post(gremlinServerAddress, JsObject("gremlin" -> JsString(gremlin)))
         }
       }
 
