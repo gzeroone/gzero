@@ -1,13 +1,12 @@
 package one.gzero.db
 
-import java.net.URLEncoder
-
 import com.thinkaurelius.titan.core.TitanGraph
 import java.sql.Timestamp
-import one.gzero.api.{Edge => GEdge, Vertex => GVertex, GzeroProtocols, Query}
+import one.gzero.Config
+import one.gzero.api.{Vertex => GVertex, GzeroProtocols, Query}
 import gremlin.scala._
 import spray.can.Http.ConnectionAttemptFailedException
-import spray.json.{JsObject}
+import spray.json.JsObject
 import scala.concurrent.{TimeoutException, Await}
 import scala.concurrent.duration._
 import akka.actor.ActorSystem
@@ -15,25 +14,22 @@ import spray.json._
 import spray.httpx.SprayJsonSupport
 import spray.client.pipelining._
 import SprayJsonSupport._
-import DefaultJsonProtocol._
+import com.thinkaurelius.titan.core.TitanFactory
 
 /* Inhererting this trait allows an app to simply create a titan graph object as graph = connect() */
-trait LocalCassandraConnect {
+trait LocalCassandraConnect extends Config {
   def connect(): TitanGraph = {
     import org.apache.commons.configuration.BaseConfiguration
     val conf = new BaseConfiguration()
 
     // graph storage
     conf.setProperty("storage.backend", "cassandra")
-    conf.setProperty("storage.hostname", "127.0.0.1")
+    conf.setProperty("storage.hostname", cassandraHostName)
 
     // indexing
     conf.setProperty("index.search.backend", "elasticsearch")
-    conf.setProperty("index.search.hostname" , "127.0.0.1")
+    conf.setProperty("index.search.hostname" , elasticsearchHostName)
     conf.setProperty("index.search.elasticsearch.client-only" ,  "true")
-//    conf.setProperty("index.search.elasticsearch.interface", "NODE")
-
-    import com.thinkaurelius.titan.core.TitanFactory
     TitanFactory.open(conf)
   }
 }

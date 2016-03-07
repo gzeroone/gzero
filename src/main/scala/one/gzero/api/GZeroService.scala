@@ -4,9 +4,8 @@ import java.sql.Timestamp
 
 import akka.actor.Actor
 import one.gzero.db.{LocalGremlinQuery, LocalCassandraConnect, VertexCache}
-import org.apache.tinkerpop.gremlin.driver.{Client, Cluster}
 import spray.routing._
-import spray.json.{JsArray, JsString, JsObject, DefaultJsonProtocol}
+import spray.json.{JsString, JsObject}
 import spray.httpx.SprayJsonSupport.sprayJsonUnmarshaller
 import com.thinkaurelius.titan.core.TitanGraph
 import one.gzero.api.{Edge => GEdge, Vertex => GVertex}
