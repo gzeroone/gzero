@@ -3,7 +3,7 @@ package one.gzero.api
 import java.sql.Timestamp
 
 import akka.actor.Actor
-import one.gzero.db.{LocalGremlinQuery, LocalCassandraConnect, VertexCache}
+import one.gzero.db.{LocalGremlinQuery, CassandraElasticSearchConnect, VertexCache}
 import spray.routing._
 import spray.json.{JsString, JsObject}
 import spray.httpx.SprayJsonSupport.sprayJsonUnmarshaller
@@ -20,7 +20,7 @@ class GZeroServiceActor extends Actor with GZeroService {
   def receive = runRoute(routes)
 }
 
-trait GZeroService extends HttpService with GzeroProtocols with LocalCassandraConnect with VertexCache with LocalGremlinQuery {
+trait GZeroService extends HttpService with GzeroProtocols with CassandraElasticSearchConnect with VertexCache with LocalGremlinQuery {
   var graphJava: TitanGraph = null
   lazy val g = graphJava.asScala
 

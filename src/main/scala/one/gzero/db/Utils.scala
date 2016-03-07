@@ -17,7 +17,7 @@ import SprayJsonSupport._
 import com.thinkaurelius.titan.core.TitanFactory
 
 /* Inhererting this trait allows an app to simply create a titan graph object as graph = connect() */
-trait LocalCassandraConnect extends Config {
+trait CassandraElasticSearchConnect extends Config {
   def connect(): TitanGraph = {
     import org.apache.commons.configuration.BaseConfiguration
     val conf = new BaseConfiguration()
