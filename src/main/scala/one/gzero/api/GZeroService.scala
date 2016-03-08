@@ -84,8 +84,11 @@ trait GzeroService extends HttpService with GzeroProtocols with CassandraElastic
 
   /* {"name":"feature_name", "bindings" : {}} */
   def handleFeature(req: FeatureQuery): String = {
-    val gremlin = req.name
-    val vo = g.V.hasLabel("feature").has(NameKey, req.name).headOption()
+    val vo = if (req.id.isDefined) {
+      g.V(req.id.get).headOption()
+    } else {
+      g.V.hasLabel("feature").has(NameKey, req.name).headOption()
+    }
     val res = if (vo.isDefined) {
       val v = vo.get
       val bindingsMap = new mutable.HashMap[String, JsValue]
@@ -96,6 +99,7 @@ trait GzeroService extends HttpService with GzeroProtocols with CassandraElastic
       if (req.bindings.isDefined) {
         bindingsMap ++= req.bindings.get.fields
       }
+      val gremlin = v.property(NameKey).value()
       val queryRequest = if (!bindingsMap.isEmpty) {
         Query(gremlin, Some(new JsObject(bindingsMap.toMap)), None)
       } else {
