@@ -23,7 +23,7 @@ object Protocols extends GzeroProtocols {
 class GzeroConnection(hostname: String, port: Int) {
   def send(data: String): GzeroResult = {
     import Protocols._
-    val gzeroAddress = s"$hostname:$port"
+    val gzeroAddress = s"http://$hostname:$port"
 
     implicit val system = ActorSystem("gzero-api")
     import system.dispatcher
