@@ -43,6 +43,8 @@ trait VertexCache {
     val PrettyNameKey = Key[String]("prettyName")
     val RatingKey = Key[Double]("rating")
     val vertexIdCache = collection.mutable.Map[(String, String), Long]()
+    val BindingsKey = Key[String]("bindings")
+    val TagsKey = Key[String]("tags")
 
     def getOrCreateVertex(vertex: GVertex): Vertex = {
         val label = vertex.label

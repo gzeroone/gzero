@@ -30,6 +30,8 @@ case class Edge(label: String, name:Option[String], event_source: Option[String]
 /*used for querying the graph*/
 case class Query(gremlin: String, bindings:Option[JsObject], tags:Option[JsArray])
 
+case class FeatureQuery(name: String, bindings:Option[JsObject])
+
 case class GraphSONEdge(outV:Int, inV:Int, label:String, properties: Option[JsObject])
 case class GraphSONVertex(label:String, id:Option[Int], properties: Option[JsObject])
 
@@ -38,4 +40,5 @@ trait GzeroProtocols extends DefaultJsonProtocol {
   implicit val impVertex = jsonFormat2(Vertex.apply)
   implicit val impEdge = jsonFormat7(Edge.apply)
   implicit val impQuery = jsonFormat3(Query.apply)
+  implicit val impFeatureQuery = jsonFormat2(FeatureQuery.apply)
 }

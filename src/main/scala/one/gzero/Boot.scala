@@ -4,8 +4,7 @@ import akka.actor.{ActorSystem, Props}
 import akka.io.IO
 import akka.pattern.ask
 import akka.util.Timeout
-import one.gzero.api.GZeroServiceActor
-import one.gzero.db.GraphPublisher
+import one.gzero.api.GzeroServiceActor
 import spray.can.Http
 
 import scala.concurrent.duration._
@@ -17,7 +16,7 @@ object Boot extends App with Config {
   implicit val system = ActorSystem("gzero-system")
 
   // create and start our actors
-  val service = system.actorOf(Props[GZeroServiceActor], "gzero-api")
+  val service = system.actorOf(Props[GzeroServiceActor], "gzero-api")
   //val publisher = system.actorOf(Props[GraphPublisher], "gzero-graphpublisher")
 
 

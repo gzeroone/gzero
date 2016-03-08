@@ -11,16 +11,21 @@ import com.thinkaurelius.titan.core.TitanGraph
 import one.gzero.api.{Edge => GEdge, Vertex => GVertex}
 import gremlin.scala._
 
+import scala.collection.mutable
 
-class GZeroServiceActor extends Actor with GZeroService {
+
+class GzeroServiceActor extends Actor with GzeroService {
   graphJava = getTitanConnection
   val graph = graphJava
+
   def actorRefFactory = context
+
   // TODO - consider creating stream processing route handling.
   def receive = runRoute(routes)
 }
 
-trait GZeroService extends HttpService with GzeroProtocols with CassandraElasticSearchConnect with VertexCache with GremlinServerConnect {
+trait GzeroService extends HttpService with GzeroProtocols with CassandraElasticSearchConnect with VertexCache
+  with GremlinServerConnect {
   var graphJava: TitanGraph = null
   lazy val g = graphJava.asScala
 
@@ -31,18 +36,17 @@ trait GZeroService extends HttpService with GzeroProtocols with CassandraElastic
     graphJava
   }
 
-  def handleEdge(edge:GEdge): String = {
+  def handleEdge(edge: GEdge): String = {
     val head = getOrCreateVertex(edge.head)
     val tail = getOrCreateVertex(edge.tail)
 
     val e = head.addEdge(edge.label, tail)
 
-    if (edge.timestamp.isDefined)
-    {
+    if (edge.timestamp.isDefined) {
       val timestamp = Timestamp.valueOf(edge.timestamp.get)
-      e.setProperty(TimestampKey,timestamp)
+      e.setProperty(TimestampKey, timestamp)
     }
-    if ( edge.event_source.isDefined ) {
+    if (edge.event_source.isDefined) {
       e.setProperty(EventSourceKey, edge.event_source.get)
     }
 
@@ -54,16 +58,13 @@ trait GZeroService extends HttpService with GzeroProtocols with CassandraElastic
     s"""{"edge_ack": $edge}"""
   }
 
-  def handleVertex(vertex:GVertex): String = {
+  def handleVertex(vertex: GVertex): String = {
     val v = getOrCreateVertex(vertex)
     s"""{"vertex_ack": $vertex}"""
   }
 
-  def handleRegisterFeature(req:Query): String = {
-    val BindingsKey = Key[String]("bindings")
-    val TagsKey = Key[String]("tags")
-
-    val (g,b,t) = (req.gremlin, req.bindings, req.tags)
+  def handleRegisterFeature(req: Query): String = {
+    val (g, b, t) = (req.gremlin, req.bindings, req.tags)
 
     val gv = new GVertex("feature", Some(JsObject("name" -> JsString(g))))
     val v = getOrCreateVertex(gv)
@@ -71,59 +72,87 @@ trait GZeroService extends HttpService with GzeroProtocols with CassandraElastic
     // The general technique will be to define the query logic with all optional parameters as
     // bindings. When "executing the feature" you can pass the bindings without the gremlin query
     // and the stored query will be executed with the bindings updated.
-    if ( b.isDefined ) {
+    if (b.isDefined) {
       v.setProperty(BindingsKey, b.get.toString)
     }
-    if ( t.isDefined ) {
+    if (t.isDefined) {
       v.setProperty(TagsKey, t.get.toString)
     }
     v.graph().tx().commit()
     s"""{"register_ack" : $v}"""
   }
 
+  /* {"name":"feature_name", "bindings" : {}} */
+  def handleFeature(req: FeatureQuery): String = {
+    import spray.json._
+    val gremlin = req.name
+    val vo = g.V.hasLabel("feature").has(NameKey, req.name).headOption()
+    val res = if (vo.isDefined) {
+      val v = vo.get
+      val bindingsMap = new mutable.HashMap[String, JsValue]
+      val bindingsProp = v.property(BindingsKey)
+      if (bindingsProp.isPresent) {
+        bindingsMap ++= bindingsProp.value().parseJson.asJsObject.fields
+      }
+      if (req.bindings.isDefined) {
+        bindingsMap ++= req.bindings.get.fields
+      }
+      val queryRequest = if (!bindingsMap.isEmpty) {
+        Query(gremlin, Some(new JsObject(bindingsMap.toMap)), None)
+      } else {
+        Query(gremlin, None, None)
+      }
+      val result = query(queryRequest)
+      result
+    } else {
+      "\"Feature Not Found\""
+    }
+    res
+  }
+
   val routes = {
-      path("edge") {
-          (post & entity(as[GEdge])) {
-            edge =>
-              complete {
-                handleEdge(edge)
-              }
+    path("edge") {
+      (post & entity(as[GEdge])) {
+        edge =>
+          complete {
+            handleEdge(edge)
           }
-      } ~
-        path("vertex") {
-          (post & entity(as[GVertex])) {
-            vertex =>
-              complete {
-                handleVertex(vertex)
-              }
-          }
-      } ~
-        path("query") {
-          (get & entity(as[Query])) {
-            queryRequest => {
-              complete {
-                query(queryRequest)
-              }
-            }
-          }
-      } ~
-        path("register_feature") {
-          (post & entity(as[Query])) {
-            req => {
-              complete {
-                handleRegisterFeature(req)
-              }
+      }
+    } ~
+      path("vertex") {
+        (post & entity(as[GVertex])) {
+          vertex =>
+            complete {
+              handleVertex(vertex)
             }
         }
       } ~
-        path("feature") {
-          (post & entity(as[Query])) {
-            req => {
-              complete {
-                handleRegisterFeature(req)
-              }
+      path("query") {
+        (get & entity(as[Query])) {
+          queryRequest => {
+            complete {
+              query(queryRequest)
             }
           }
         }
+      } ~
+      path("register_feature") {
+        (post & entity(as[Query])) {
+          req => {
+            complete {
+              handleRegisterFeature(req)
+            }
+          }
+        }
+      } ~
+      path("feature") {
+        (get & entity(as[FeatureQuery])) {
+          req => {
+            complete {
+              handleFeature(req)
+            }
+          }
+        }
+      }
   }
 }
