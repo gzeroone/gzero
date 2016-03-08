@@ -10,7 +10,7 @@ import spray.httpx.SprayJsonSupport.sprayJsonUnmarshaller
 import com.thinkaurelius.titan.core.TitanGraph
 import one.gzero.api.{Edge => GEdge, Vertex => GVertex}
 import gremlin.scala._
-
+import spray.json._
 import scala.collection.mutable
 
 
@@ -64,9 +64,9 @@ trait GzeroService extends HttpService with GzeroProtocols with CassandraElastic
   }
 
   def handleRegisterFeature(req: Query): String = {
-    val (g, b, t) = (req.gremlin, req.bindings, req.tags)
+    val (gremlin, b, t) = (req.gremlin, req.bindings, req.tags)
 
-    val gv = new GVertex("feature", Some(JsObject("name" -> JsString(g))))
+    val gv = new GVertex("feature", Some(JsObject("name" -> JsString(gremlin))))
     val v = getOrCreateVertex(gv)
 
     // The general technique will be to define the query logic with all optional parameters as
@@ -84,7 +84,6 @@ trait GzeroService extends HttpService with GzeroProtocols with CassandraElastic
 
   /* {"name":"feature_name", "bindings" : {}} */
   def handleFeature(req: FeatureQuery): String = {
-    import spray.json._
     val gremlin = req.name
     val vo = g.V.hasLabel("feature").has(NameKey, req.name).headOption()
     val res = if (vo.isDefined) {
