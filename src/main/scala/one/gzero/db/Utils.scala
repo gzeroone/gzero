@@ -84,6 +84,7 @@ trait VertexCache {
     }
     if (vertex.properties.isDefined) {
       for ((k, v) <- vertex.properties.get.fields) {
+        println("updating vertex:", k, v)
         //attempt to convert to int. if fail just convert to string
         //TODO this is probably really slow
         val x = try {

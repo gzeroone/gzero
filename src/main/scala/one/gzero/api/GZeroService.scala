@@ -56,6 +56,7 @@ trait GzeroService extends HttpService with CassandraElasticSearchConnect with V
     if (edge.properties.isDefined) {
       //TODO - update the properties of the edge
       for( (k,v) <- edge.properties.get.fields  ) {
+        println("updating edge:", k,v)
         //attempt to convert to int. if fail just convert to string
         //TODO this is probably really slow
         val x = try {
@@ -72,7 +73,6 @@ trait GzeroService extends HttpService with CassandraElasticSearchConnect with V
           }
         }
         e.setProperty(TitanUtils.convertToTitanKey(k), x)
-        println(k,v, x)
       }
     }
     g.tx().commit()
