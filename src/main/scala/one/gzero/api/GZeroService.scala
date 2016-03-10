@@ -77,7 +77,6 @@ trait GzeroService extends HttpService with CassandraElasticSearchConnect with V
         e.setProperty(convertToTitanKey(k), x)
         println(k,v, x)
       }
-
     }
     g.tx().commit()
 
@@ -85,8 +84,28 @@ trait GzeroService extends HttpService with CassandraElasticSearchConnect with V
   }
 
   def handleVertex(vertex: GVertex): GzeroResult = {
-    val v = getOrCreateVertex(vertex)
-    GzeroResult(JsObject("vertex_ack" -> v.toString.toJson), JsObject("success" -> "true".toJson))
+    val sv = getOrCreateVertex(vertex)
+    if (vertex.properties.isDefined) {
+      for( (k,v) <- vertex.properties.get.fields  ) {
+        //attempt to convert to int. if fail just convert to string
+        //TODO this is probably really slow
+        val x = try {
+          v.convertTo[Int]
+        } catch {
+          case e : Exception => {
+            try {
+              v.convertTo[String]
+            } catch {
+              case e : Exception => {
+                v.toString
+              }
+            }
+          }
+        }
+        sv.setProperty(convertToTitanKey(k), x)
+      }
+    }
+    GzeroResult(JsObject("vertex_ack" -> sv.toString.toJson), JsObject("success" -> "true".toJson))
   }
 
   def handleRegisterFeature(req: Query): GzeroResult = {
