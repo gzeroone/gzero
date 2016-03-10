@@ -28,55 +28,85 @@ trait CassandraElasticSearchConnect extends Config {
 
     // indexing
     conf.setProperty("index.search.backend", "elasticsearch")
-    conf.setProperty("index.search.hostname" , elasticsearchHostName)
-    conf.setProperty("index.search.elasticsearch.client-only" ,  "true")
+    conf.setProperty("index.search.hostname", elasticsearchHostName)
+    conf.setProperty("index.search.elasticsearch.client-only", "true")
     TitanFactory.open(conf)
   }
 }
 
-trait VertexCache {
-    val graph : TitanGraph
-    val TimestampKey = Key[Timestamp]("timestamp")
-    val EventSourceKey = Key[String]("event_source")
-    /* the api allows for id, but we represent this as name inside of graph db, because the graph db has it's own id */
-    val NameKey = Key[String]("name")
-    val PrettyNameKey = Key[String]("prettyName")
-    val RatingKey = Key[Double]("rating")
-    val vertexIdCache = collection.mutable.Map[(String, String), Long]()
-    val BindingsKey = Key[String]("bindings")
-    val TagsKey = Key[String]("tags")
+object TitanUtils {
+  def convertToTitanKey (s: String): Key[Any] = {
+    Key(s)
+  }
+}
 
-    def getOrCreateVertex(vertex: GVertex): Vertex = {
-        val label = vertex.label
-        val name : String = vertex.getProperty("name")
-        val check = vertexIdCache.get(label, name)
-        if (check.isDefined) {
-          try {
-            return graph.V(check.get).head()
-          } catch {
-            case e: Exception => {
-              //log something
-              vertexIdCache.remove(label, name)
+object Protocols extends GzeroProtocols
+
+trait VertexCache {
+  import Protocols._
+
+  val graph: TitanGraph
+  val TimestampKey = Key[Timestamp]("timestamp")
+  val EventSourceKey = Key[String]("event_source")
+  /* the api allows for id, but we represent this as name inside of graph db, because the graph db has it's own id */
+  val NameKey = Key[String]("name")
+  val PrettyNameKey = Key[String]("prettyName")
+  val RatingKey = Key[Double]("rating")
+  val vertexIdCache = collection.mutable.Map[(String, String), Long]()
+  val BindingsKey = Key[String]("bindings")
+  val TagsKey = Key[String]("tags")
+
+  def getOrCreateVertex(vertex: GVertex): Vertex = {
+    val label = vertex.label
+    val name: String = vertex.getProperty("name")
+    val check = vertexIdCache.get(label, name)
+    if (check.isDefined) {
+      try {
+        return graph.V(check.get).head()
+      } catch {
+        case e: Exception => {
+          //log something
+          vertexIdCache.remove(label, name)
+        }
+      }
+    }
+
+    /* go ask the graph for the vertex */
+    val answer = {
+      val matches = graph.V.has(label, NameKey, name).toList()
+      if (matches.length > 0) {
+        matches.head
+      }
+      else {
+        /* create the vertex */
+        graph +(label, NameKey -> name)
+      }
+    }
+    if (vertex.properties.isDefined) {
+      for ((k, v) <- vertex.properties.get.fields) {
+        //attempt to convert to int. if fail just convert to string
+        //TODO this is probably really slow
+        val x = try {
+          v.convertTo[Int]
+        } catch {
+          case e: Exception => {
+            try {
+              v.convertTo[String]
+            } catch {
+              case e: Exception => {
+                v.toString
+              }
             }
           }
         }
-
-        /* go ask the graph for the vertex */
-        val answer = {
-          val matches = graph.V.has(label, NameKey, name).toList()
-          if (matches.length > 0) {
-            matches.head
-          }
-          else {
-            /* create the vertex */
-            graph +(label, NameKey -> name)
-          }
-        }
-        val vId = answer.id().asInstanceOf[Long]
-        vertexIdCache += ((label, name) -> vId)
-        graph.tx().commit()
-        return answer
+        answer.setProperty(TitanUtils.convertToTitanKey(k), x)
+      }
     }
+    val vId = answer.id().asInstanceOf[Long]
+    vertexIdCache += ((label, name) -> vId)
+    graph.tx().commit()
+    return answer
+  }
 }
 
 case class GremlinResult(requestId: String, result: JsObject, status: JsObject)

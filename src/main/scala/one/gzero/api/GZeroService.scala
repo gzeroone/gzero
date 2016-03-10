@@ -3,7 +3,7 @@ package one.gzero.api
 import java.sql.Timestamp
 
 import akka.actor.Actor
-import one.gzero.db.{GremlinServerConnect, CassandraElasticSearchConnect, VertexCache}
+import one.gzero.db.{TitanUtils, GremlinServerConnect, CassandraElasticSearchConnect, VertexCache}
 import spray.routing._
 import com.thinkaurelius.titan.core.TitanGraph
 import one.gzero.api.{Edge => GEdge, Vertex => GVertex}
@@ -31,9 +31,6 @@ trait GzeroService extends HttpService with CassandraElasticSearchConnect with V
   var graphJava: TitanGraph = null
   lazy val g = graphJava.asScala
 
-  def convertToTitanKey( s: String): Key[Any] = {
-    Key(s)
-  }
 
   def getTitanConnection = {
     if (graphJava == null || !graphJava.isOpen()) {
@@ -74,7 +71,7 @@ trait GzeroService extends HttpService with CassandraElasticSearchConnect with V
             }
           }
         }
-        e.setProperty(convertToTitanKey(k), x)
+        e.setProperty(TitanUtils.convertToTitanKey(k), x)
         println(k,v, x)
       }
     }
@@ -85,26 +82,6 @@ trait GzeroService extends HttpService with CassandraElasticSearchConnect with V
 
   def handleVertex(vertex: GVertex): GzeroResult = {
     val sv = getOrCreateVertex(vertex)
-    if (vertex.properties.isDefined) {
-      for( (k,v) <- vertex.properties.get.fields  ) {
-        //attempt to convert to int. if fail just convert to string
-        //TODO this is probably really slow
-        val x = try {
-          v.convertTo[Int]
-        } catch {
-          case e : Exception => {
-            try {
-              v.convertTo[String]
-            } catch {
-              case e : Exception => {
-                v.toString
-              }
-            }
-          }
-        }
-        sv.setProperty(convertToTitanKey(k), x)
-      }
-    }
     GzeroResult(JsObject("vertex_ack" -> sv.toString.toJson), JsObject("success" -> "true".toJson))
   }
 
