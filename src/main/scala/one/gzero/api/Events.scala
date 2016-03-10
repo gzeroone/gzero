@@ -34,6 +34,8 @@ case class FeatureQuery(name: String, id : Option[Int], bindings:Option[JsObject
 
 case class GraphSONEdge(outV:Int, inV:Int, label:String, properties: Option[JsObject])
 case class GraphSONVertex(label:String, id:Option[Int], properties: Option[JsObject])
+case class GzeroResult(result: JsObject, status: JsObject)
+
 
 /* TODO - consider dropping Protocols and put implicit JSON conversion directly in the Vertex,Edge, Query classes */
 trait GzeroProtocols extends DefaultJsonProtocol {
@@ -41,4 +43,5 @@ trait GzeroProtocols extends DefaultJsonProtocol {
   implicit val impEdge = jsonFormat7(Edge.apply)
   implicit val impQuery = jsonFormat3(Query.apply)
   implicit val impFeatureQuery = jsonFormat3(FeatureQuery.apply)
+  implicit val gzProt = jsonFormat2(GzeroResult)
 }

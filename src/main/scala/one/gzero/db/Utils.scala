@@ -98,17 +98,19 @@ object GremlinResultJsonProtocol extends DefaultJsonProtocol with GzeroProtocols
 }
 
 trait GremlinServerConnect extends Config {
-  def query(query : Query): String = {
+  import SprayJsonSupport._
+  import GremlinResultJsonProtocol._
+  implicit val system = ActorSystem("gzero-api")
+  import system.dispatcher
+  val pipeline = sendReceive ~> unmarshal[GremlinResult]
+
+  def query(query : Query): JsObject = {
     import GremlinResultJsonProtocol._
     val (gremlin, bindings) = (query.gremlin, query.bindings)
     val jsonQuery = query.toJson
-    implicit val system = ActorSystem("gzero-api")
-    import system.dispatcher
-
-
-    val pipeline = sendReceive ~> unmarshal[GremlinResult]
 
     //curl -X POST -d "{\"gremlin\":\"100-x\", \"bindings\":{\"x\":1}}" "http://localhost:8182"
+    val res =
     try {
       val responseFuture = pipeline {
         if (bindings.isDefined) {
@@ -119,22 +121,14 @@ trait GremlinServerConnect extends Config {
       }
 
       Await.result(responseFuture, 24 hours)
-      val graphSon =responseFuture.value.get.get.result.fields("data")
-      graphSon.toString
+      responseFuture.value.get.get.toJson.asJsObject
     }
     catch {
-      case ca: ConnectionAttemptFailedException => {
-        ca.printStackTrace()
-        s"""{"error": true, "message": "Connection to gremlin server failed"}"""
-      }
-      case te: TimeoutException => {
-        te.printStackTrace()
-        s"""{"error": true, "message": "Timeout executing query", "gremlin": $jsonQuery}"""
-      }
       case e: Exception => {
         e.printStackTrace()
-        s"""{"error": true, "message": "An unknown error occurred, check the query syntax", "gremlin": $jsonQuery}"""
+        JsObject("error" -> true.toJson, "message" -> "unknown error".toJson, "gremlin" -> query.toJson)
       }
     }
+    res
   }
 }

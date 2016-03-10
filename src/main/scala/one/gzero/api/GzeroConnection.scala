@@ -8,27 +8,25 @@ import spray.json._
 
 import scala.concurrent._
 import scala.concurrent.duration._
-import SprayJsonSupport._
 
 /**
   * Created by james on 3/7/16.
   */
 
-case class GzeroResult(requestId: String, result: JsObject, status: JsObject)
-
-object Protocols extends GzeroProtocols {
-  implicit val gzProt = jsonFormat3(GzeroResult)
-}
 
 class GzeroConnection(hostname: String, port: Int) {
-  def send(data: String): GzeroResult = {
-    import Protocols._
-    val gzeroAddress = s"http://$hostname:$port"
+  import SprayJsonSupport._
+  import Protocols._
+  implicit val system = ActorSystem("gzero-api")
+  import system.dispatcher
+  val pipeline = sendReceive ~> unmarshal[GzeroResult]
 
-    implicit val system = ActorSystem("gzero-api")
-    import system.dispatcher
+  def sendEdge(edge: Edge) = {
+    send(edge.toJson.asJsObject, "edge")
+  }
 
-    val pipeline = sendReceive ~> unmarshal[GzeroResult]
+  def send(data: JsObject, path:String): GzeroResult = {
+    val gzeroAddress = s"http://$hostname:$port/$path"
 
     val res =
       try {
@@ -36,20 +34,20 @@ class GzeroConnection(hostname: String, port: Int) {
           Post(gzeroAddress, data)
         }
         Await.result(responseFuture, 24 hours)
-        responseFuture.value.get.get
+        GzeroResult(JsObject("message" -> responseFuture.value.get.get.toJson), JsObject("success" -> "true".toJson))
       }
       catch {
         case ca: ConnectionAttemptFailedException => {
           ca.printStackTrace()
-          GzeroResult("", JsObject("message" -> "connection failed".toJson), JsObject("error" -> "true".toJson))
+          GzeroResult(JsObject("message" -> "connection failed".toJson), JsObject("error" -> "true".toJson))
         }
         case te: TimeoutException => {
           te.printStackTrace()
-          GzeroResult("", JsObject("message" -> s"timeout sending data $data".toJson), JsObject("error" -> "true".toJson))
+          GzeroResult(JsObject("message" -> s"timeout sending data $data".toJson), JsObject("error" -> "true".toJson))
         }
         case e: Exception => {
           e.printStackTrace()
-          GzeroResult("", JsObject("message" -> s"an unknown error occurred $data".toJson), JsObject("error" -> "true".toJson))
+          GzeroResult(JsObject("message" -> s"an unknown error occurred $data".toJson), JsObject("error" -> "true".toJson))
         }
       }
     res

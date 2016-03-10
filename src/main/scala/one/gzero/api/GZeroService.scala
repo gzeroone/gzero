@@ -5,29 +5,35 @@ import java.sql.Timestamp
 import akka.actor.Actor
 import one.gzero.db.{GremlinServerConnect, CassandraElasticSearchConnect, VertexCache}
 import spray.routing._
-import spray.json.{JsString, JsObject}
-import spray.httpx.SprayJsonSupport.sprayJsonUnmarshaller
 import com.thinkaurelius.titan.core.TitanGraph
 import one.gzero.api.{Edge => GEdge, Vertex => GVertex}
 import gremlin.scala._
-import spray.json._
 import scala.collection.mutable
+import spray.json._
 
 
 class GzeroServiceActor extends Actor with GzeroService {
   graphJava = getTitanConnection
   val graph = graphJava
 
-  def actorRefFactory = context
+  implicit def actorRefFactory = context
 
   // TODO - consider creating stream processing route handling.
   def receive = runRoute(routes)
 }
 
-trait GzeroService extends HttpService with GzeroProtocols with CassandraElasticSearchConnect with VertexCache
+object Protocols extends GzeroProtocols
+
+trait GzeroService extends HttpService with CassandraElasticSearchConnect with VertexCache
   with GremlinServerConnect {
+  import spray.httpx.SprayJsonSupport._
+  import Protocols._
   var graphJava: TitanGraph = null
   lazy val g = graphJava.asScala
+
+  def convertToTitanKey( s: String): Key[Any] = {
+    Key(s)
+  }
 
   def getTitanConnection = {
     if (graphJava == null || !graphJava.isOpen()) {
@@ -36,7 +42,7 @@ trait GzeroService extends HttpService with GzeroProtocols with CassandraElastic
     graphJava
   }
 
-  def handleEdge(edge: GEdge): String = {
+  def handleEdge(edge: GEdge): GzeroResult = {
     val head = getOrCreateVertex(edge.head)
     val tail = getOrCreateVertex(edge.tail)
 
@@ -52,18 +58,38 @@ trait GzeroService extends HttpService with GzeroProtocols with CassandraElastic
 
     if (edge.properties.isDefined) {
       //TODO - update the properties of the edge
+      for( (k,v) <- edge.properties.get.fields  ) {
+        //attempt to convert to int. if fail just convert to string
+        //TODO this is probably really slow
+        val x = try {
+          v.convertTo[Int]
+        } catch {
+          case e : Exception => {
+            try {
+              v.convertTo[String]
+            } catch {
+              case e : Exception => {
+                v.toString
+              }
+            }
+          }
+        }
+        e.setProperty(convertToTitanKey(k), x)
+        println(k,v, x)
+      }
+
     }
     g.tx().commit()
 
-    s"""{"edge_ack": $edge}"""
+    GzeroResult(JsObject("edge_ack" -> e.toString.toJson), JsObject("success" -> "true".toJson))
   }
 
-  def handleVertex(vertex: GVertex): String = {
+  def handleVertex(vertex: GVertex): GzeroResult = {
     val v = getOrCreateVertex(vertex)
-    s"""{"vertex_ack": $vertex}"""
+    GzeroResult(JsObject("vertex_ack" -> v.toString.toJson), JsObject("success" -> "true".toJson))
   }
 
-  def handleRegisterFeature(req: Query): String = {
+  def handleRegisterFeature(req: Query): GzeroResult = {
     val (gremlin, b, t) = (req.gremlin, req.bindings, req.tags)
 
     val gv = new GVertex("feature", Some(JsObject("name" -> JsString(gremlin))))
@@ -79,11 +105,11 @@ trait GzeroService extends HttpService with GzeroProtocols with CassandraElastic
       v.setProperty(TagsKey, t.get.toString)
     }
     v.graph().tx().commit()
-    s"""{"register_ack" : $v}"""
+    GzeroResult(JsObject("register_ack" -> v.toString.toJson), JsObject("success" -> "true".toJson))
   }
 
   /* {"name":"feature_name", "bindings" : {}} */
-  def handleFeature(req: FeatureQuery): String = {
+  def handleFeature(req: FeatureQuery): GzeroResult = {
     val vo = if (req.id.isDefined) {
       g.V(req.id.get).headOption()
     } else {
@@ -106,9 +132,9 @@ trait GzeroService extends HttpService with GzeroProtocols with CassandraElastic
         Query(gremlin, None, None)
       }
       val result = query(queryRequest)
-      result
+      GzeroResult(JsObject("result" -> result), JsObject("success" -> "true".toJson))
     } else {
-      "\"Feature Not Found\""
+      GzeroResult(JsObject("feature_not_found" -> true.toJson), JsObject("success" -> "true".toJson))
     }
     res
   }
@@ -134,7 +160,8 @@ trait GzeroService extends HttpService with GzeroProtocols with CassandraElastic
         (get & entity(as[Query])) {
           queryRequest => {
             complete {
-              query(queryRequest)
+              val r = query(queryRequest)
+              GzeroResult(JsObject("result" -> r.toJson), JsObject("success" -> "true".toJson))
             }
           }
         }
