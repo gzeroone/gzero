@@ -25,9 +25,12 @@ class GzeroConnection(hostname: String, port: Int) {
     send(edge.toJson.asJsObject, "edge")
   }
 
+  def query(gremlin: Query): GzeroResult = {
+    send(gremlin.toJson.asJsObject, "query")
+  }
+
   def send(data: JsObject, path:String): GzeroResult = {
     val gzeroAddress = s"http://$hostname:$port/$path"
-
     val res =
       try {
         val responseFuture = pipeline {

@@ -19,8 +19,8 @@ object Boot extends App with Config {
   val service = system.actorOf(Props[GzeroServiceActor], "gzero-api")
   //val publisher = system.actorOf(Props[GraphPublisher], "gzero-graphpublisher")
 
-
-  implicit val timeout = Timeout(5.seconds)
+  //two minute timeout -- TODO - configure this in application.conf
+  implicit val timeout = Timeout(120.seconds)
   // start a new HTTP server on port 8080 with our service actor as the handler
   IO(Http) ? Http.Bind(service, interface = gzeroInterface, port = gzeroPort)
 }
