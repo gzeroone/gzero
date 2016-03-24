@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.core.TitanGraph
 import one.gzero.api.{Edge => GEdge, Vertex => GVertex}
 import gremlin.scala._
 
-class GraphPublisher() extends Actor with ActorLogging with CassandraElasticSearchConnect with VertexCache {
+class GraphPublisher extends Actor with ActorLogging with CassandraElasticSearchConnect with VertexCache {
   val graphJava = connect()
   val graph = graphJava
   val g = graphJava.asScala

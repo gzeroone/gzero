@@ -22,19 +22,27 @@ class GzeroConnection(hostname: String, port: Int) {
   val pipeline = sendReceive ~> unmarshal[GzeroResult]
 
   def sendEdge(edge: Edge) = {
-    send(edge.toJson.asJsObject, "edge")
+    send(edge.toJson.asJsObject, "edge", "post")
   }
 
   def query(gremlin: Query): GzeroResult = {
-    send(gremlin.toJson.asJsObject, "query")
+    send(gremlin.toJson.asJsObject, "query", "get")
   }
 
-  def send(data: JsObject, path:String): GzeroResult = {
+  //TODO - make this method stuff less hacky
+  def send(data: JsObject, path:String, method:String): GzeroResult = {
     val gzeroAddress = s"http://$hostname:$port/$path"
     val res =
       try {
         val responseFuture = pipeline {
-          Post(gzeroAddress, data)
+          method match {
+            case "get" => {
+              Get(gzeroAddress, data)
+            }
+            case "post" => {
+              Post(gzeroAddress, data)
+            }
+          }
         }
         Await.result(responseFuture, 24 hours)
         GzeroResult(JsObject("message" -> responseFuture.value.get.get.toJson), JsObject("success" -> "true".toJson))
