@@ -1,5 +1,5 @@
 # gzero
-GZero simplifies large scale graph-based computing, storage, and machine learning model predictions.
+GZero simplifies large scale graph-based computing, storage, and machine learning model predictions. All features and labels will be expressed as graph traversals. A user may specify the features necessary to construct a feature vector with the appropriate labels and the framework will provide an easy API for training, evaluating, and performing predictions with stored models.
 
 ## Getting Started
 
@@ -39,7 +39,7 @@ Request:
 curl \
 	-H 'Content-Type: application/json' \
 	-X POST localhost:8080/edge \
-	-d '{"label":"drove", "head":{"label":"person","name":"Bonnie"},"tail":{"label":"vehicle","name":"1932 Ford V-8 B-400 convertible sedan"}}'
+	-d '{"label":"drove", "head":{"label":"person","properties" : {"name":"Bonnie"}},"tail":{"label":"vehicle", "properties":{"name":"1932 Ford V-8 B-400 convertible sedan"}}}'
 ```
 
 ### POST `/vertex`
@@ -50,7 +50,7 @@ Request:
 curl \
 	-H 'Content-Type: application/json' \
 	-X POST localhost:8080/vertex \
-	-d '{"label":"person","name":"Clyde"}'
+	-d '{"label":"person","properties":{"name":"Clyde"}}'
 ```
 
 
@@ -64,3 +64,7 @@ curl \
 	-X GET localhost:8080/query \
 	-d '{"gremlin":"g.V().has(\"name\", \"Bonnie\")"}'
 ```
+
+## Code
+If you are interested in contributing and jumping into the code, start with [GZeroService.scala](https://github.com/jamesjgardner/gzero/blob/master/src/main/scala/one/gzero/api/GZeroService.scala)
+

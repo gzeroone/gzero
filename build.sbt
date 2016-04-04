@@ -1,10 +1,14 @@
 organization := "one.gzero"
 
+name := "gzero"
+
 version := "0.0.1-SNAPSHOT"
 
 scalaVersion := "2.11.7"
 
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
+
+publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
 
 val akkaV = "2.3.9"
 val sprayV = "1.3.3"
@@ -33,11 +37,14 @@ libraryDependencies ++= Seq(
   //    "com.thinkaurelius.titan" % "titan-hbase" % titanV,
   //    "com.thinkaurelius.titan" % "titan-solr" % titanV,
   "org.apache.tinkerpop" % "tinkergraph-gremlin" % gremlinV,
-  "org.apache.tinkerpop" % "gremlin-driver" % gremlinV,
-  "org.specs2" %% "specs2-core" % "2.3.11" % "test"
+  "org.apache.tinkerpop" % "gremlin-driver" % gremlinV
+  //"org.specs2" %% "specs2-core" % "2.3.11" % "test"
 )
 
-resolvers += "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository"
+libraryDependencies += "org.scalactic" %% "scalactic" % "2.2.6"
 
+libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.6" % "test"
+
+resolvers += "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository"
 
 Revolver.settings
