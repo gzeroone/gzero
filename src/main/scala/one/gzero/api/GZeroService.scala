@@ -3,6 +3,7 @@ package one.gzero.api
 import java.sql.Timestamp
 
 import akka.actor.Actor
+import com.typesafe.scalalogging.LazyLogging
 import one.gzero.db.{TitanUtils, GremlinServerConnect, CassandraElasticSearchConnect, VertexCache}
 import spray.routing._
 import com.thinkaurelius.titan.core.TitanGraph
@@ -10,7 +11,6 @@ import one.gzero.api.{Edge => GEdge, Vertex => GVertex}
 import gremlin.scala._
 import scala.collection.mutable
 import spray.json._
-
 
 class GzeroServiceActor extends Actor with GzeroService {
   graphJava = getTitanConnection
@@ -24,13 +24,12 @@ class GzeroServiceActor extends Actor with GzeroService {
 
 object Protocols extends GzeroProtocols
 
-trait GzeroService extends HttpService with CassandraElasticSearchConnect with VertexCache
+trait GzeroService extends HttpService with CassandraElasticSearchConnect with VertexCache with LazyLogging
   with GremlinServerConnect {
   import spray.httpx.SprayJsonSupport._
   import Protocols._
   var graphJava: TitanGraph = null
   lazy val g = graphJava.asScala
-
 
   def getTitanConnection = {
     if (graphJava == null || !graphJava.isOpen()) {
@@ -56,7 +55,8 @@ trait GzeroService extends HttpService with CassandraElasticSearchConnect with V
     if (edge.properties.isDefined) {
       //TODO - update the properties of the edge
       for( (k,v) <- edge.properties.get.fields  ) {
-        println("updating edge:", k,v)
+        logger.debug("updating edge: {}, {}", k, v)
+
         //attempt to convert to int. if fail just convert to string
         //TODO this is probably really slow
         val x = try {

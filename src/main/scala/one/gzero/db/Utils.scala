@@ -2,6 +2,7 @@ package one.gzero.db
 
 import com.thinkaurelius.titan.core.TitanGraph
 import java.sql.Timestamp
+import com.typesafe.scalalogging.LazyLogging
 import one.gzero.Config
 import one.gzero.api.{Vertex => GVertex, GzeroProtocols, Query}
 import gremlin.scala._
@@ -42,7 +43,7 @@ object TitanUtils {
 
 object Protocols extends GzeroProtocols
 
-trait VertexCache {
+trait VertexCache extends LazyLogging {
   import Protocols._
 
   val graph: TitanGraph
@@ -84,7 +85,8 @@ trait VertexCache {
     }
     if (vertex.properties.isDefined) {
       for ((k, v) <- vertex.properties.get.fields) {
-        println("updating vertex:", k, v)
+        logger.debug("updating vertex: {}, {}", k, v)
+
         //attempt to convert to int. if fail just convert to string
         //TODO this is probably really slow
         val x = try {

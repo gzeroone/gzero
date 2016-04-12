@@ -16,18 +16,25 @@ val akkaStreamV = "2.0.1"
 val titanV = "1.1.0-SNAPSHOT" // 1.1.0-SNAPSHOT requires download and mvn install of titan11 branch
 val gremlinV = "3.1.0-incubating"
 val gremlinScalaV = "3.1.0-incubating"
+val logbackV = "1.1.7"
+val scalaLoggingV = "3.1.0"
 
 libraryDependencies ++= Seq(
   "io.spray" %% "spray-can" % sprayV,
   "io.spray" %% "spray-routing-shapeless2" % sprayV,
   "io.spray" %% "spray-client" % sprayV,
   "io.spray" %% "spray-testkit" % sprayV % "test",
+
   "com.typesafe.akka" %% "akka-actor" % akkaV,
+  "com.typesafe.akka" %% "akka-slf4j" % akkaV,
+  "ch.qos.logback" % "logback-classic" % logbackV,
+  "com.typesafe.scala-logging" %% "scala-logging" % scalaLoggingV,
   "com.typesafe.akka" %% "akka-testkit" % akkaV % "test",
   "com.typesafe.akka" %% "akka-http-core-experimental" % akkaStreamV,
   "com.typesafe.akka" %% "akka-http-experimental" % akkaStreamV,
   "com.typesafe.akka" %% "akka-http-spray-json-experimental" % akkaStreamV,
   "com.typesafe.akka" %% "akka-http-testkit-experimental" % akkaStreamV,
+
   "com.michaelpollmeier" %% "gremlin-scala" % gremlinScalaV,
   "com.thinkaurelius.titan" % "titan-core" % titanV,
   "com.thinkaurelius.titan" % "titan-cassandra" % titanV,
