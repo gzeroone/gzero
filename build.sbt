@@ -1,8 +1,16 @@
+import com.typesafe.sbt.packager.archetypes.JavaServerAppPackaging
+
 organization := "one.gzero"
 
 name := "gzero"
 
 version := "0.0.1-SNAPSHOT"
+
+maintainer := "Ross McKelvie <ross@favordelivery.com>"
+
+packageSummary := "GZero"
+
+packageDescription := "GZero simplifies graph-based computing, storage, and machine learning model predictions"
 
 scalaVersion := "2.11.7"
 
@@ -55,3 +63,5 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.6" % "test"
 resolvers += "Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository"
 
 Revolver.settings
+
+enablePlugins(JavaServerAppPackaging)
