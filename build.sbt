@@ -4,7 +4,7 @@ organization := "one.gzero"
 
 name := "gzero"
 
-version := "0.0.1-SNAPSHOT"
+version := "0.0.1"
 
 maintainer := "Ross McKelvie <ross@favordelivery.com>"
 
