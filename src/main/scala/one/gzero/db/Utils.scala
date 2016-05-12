@@ -90,7 +90,12 @@ trait VertexCache extends LazyLogging {
         //attempt to convert to int. if fail just convert to string
         //TODO this is probably really slow
         val x = try {
-          v.convertTo[Int]
+          val zz = v.convertTo[Double]
+          if (zz == Math.floor(zz)) {
+            zz.toInt
+          } else {
+            zz
+          }
         } catch {
           case e: Exception => {
             try {
