@@ -1,5 +1,6 @@
 package one.gzero.api
 
+import com.thinkaurelius.titan.core.attribute.Geoshape
 import spray.json._
 
 abstract class PropertyHolder {
@@ -44,4 +45,15 @@ trait GzeroProtocols extends DefaultJsonProtocol {
   implicit val impQuery = jsonFormat3(Query.apply)
   implicit val impFeatureQuery = jsonFormat3(FeatureQuery.apply)
   implicit val gzProt = jsonFormat2(GzeroResult)
+  implicit object GeoshapeJsonFormat extends RootJsonFormat[Geoshape] {
+    def write(g: Geoshape) = JsObject(
+      "location" -> JsArray(JsNumber(g.getPoint().getLatitude()), JsNumber(g.getPoint().getLongitude()))
+    )
+
+    def read(value: JsValue) = value match {
+      case JsArray(Vector(JsNumber(merchantLat), JsNumber(merchantLng))) =>
+        Geoshape.point(merchantLat.toFloat, merchantLng.toFloat)
+      case _ => deserializationError("Geoshape expected")
+    }
+  }
 }
