@@ -1,5 +1,6 @@
 package one.gzero.db
 
+import com.thinkaurelius.titan.core.attribute.Geoshape
 import com.thinkaurelius.titan.core.TitanGraph
 import java.sql.Timestamp
 import com.typesafe.scalalogging.LazyLogging
@@ -90,11 +91,16 @@ trait VertexCache extends LazyLogging {
         //attempt to convert to int. if fail just convert to string
         //TODO this is probably really slow
         val x = try {
-          val zz = v.convertTo[Double]
-          if (zz == Math.floor(zz)) {
-            zz.toInt
+          if (k == "location") {
+            //assume we are storing a geoshape. TODO - this should be made configurable
+            v.convertTo[Geoshape]
           } else {
-            zz
+            val zz = v.convertTo[Double]
+            if (zz == Math.floor(zz)) {
+              zz.toInt
+            } else {
+              zz
+            }
           }
         } catch {
           case e: Exception => {
